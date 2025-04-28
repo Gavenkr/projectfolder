@@ -6,7 +6,8 @@ class ApiService {
   Future<Response> login(String username, String password) async {
     try {
       Response response = await _dio.post(
-        'http://YOUR_SERVER_IP:PORT/login',
+        'http://14.56.199.186:8080/api/auth/login',
+        //'/test',
         data: {
           'username': username,
           'password': password,
@@ -15,7 +16,9 @@ class ApiService {
           contentType: Headers.jsonContentType,
         ),
       );
+      print(response);
       return response;
+
     } on DioException catch (e) {
       throw e;
     } catch (e) {

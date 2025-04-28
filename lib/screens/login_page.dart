@@ -19,9 +19,9 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       _errorMessage = '';
     });
-
     if (_formKey.currentState!.validate()) {
       try {
+
         final response = await _apiService.login(
           _usernameController.text,
           _passwordController.text,
@@ -31,11 +31,13 @@ class _LoginPageState extends State<LoginPage> {
           setState(() {
             _errorMessage = "로그인 성공";
           });
+          print(response.statusCode);
           Navigator.pushReplacementNamed(context, '/main');
         } else {
           setState(() {
             _errorMessage = response.data['message'] ?? '로그인 실패';
           });
+          print(response.statusCode);
         }
       } catch (e) {
         setState(() {

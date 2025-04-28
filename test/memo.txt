@@ -1,0 +1,106 @@
+# Data Flow Diagram (DFD)
+
+## Level 0 (Context Diagram)
+
++-------------------+        +-------------+       +-----------------+
+|    User (사용자)    |------>|   Login App (로그인 앱)   |----->|  Login Server (로그인 서버) |
++-------------------+        +-------------+       +-----------------+
+       ^                                      |
+       |                                      |
+       +--------------------------------------+
+
+## Level 1 (Detailed Diagram)
+
++-----------+      [1.0 User Input (사용자 입력)]      +-------------------+      [2.0 Authentication Request (인증 요청)]      +-------------+      [3.0 Authentication Result (인증 결과)]      +-----------+
+|    User    |---------------------->|    Login UI (로그인 화면) |--------------------->|    Authentication Process (인증 처리)   |--------------------->|    User    |
++-----------+      [4.0 Server Response (서버 응답)]     +-------------------+      [5.0 Database Request (데이터베이스 요청)]     +-------------+      [6.0 Database Response (데이터베이스 응답)]    +-----------+
+       ^                                    |                                    |                                    |
+       |                                    |                                    |                                    |
+       +------------------------------------+                                    |
+              [7.0 Data Save (데이터 저장)]                                                 |
+       +--------------------------------------------------------------------------------------------------------------+
+
+                                               v
+                                         +------------+
+                                         |  Database  |
+                                         +------------+
+
+# Data Dictionary
+
+## Data Flows
+
+| Data Flow (자료 흐름)              | Data Composition (자료 구성)                                | Description (설명)                                                                                                             |
+| :-------------------------------- | :------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------ |
+| User Input (사용자 입력)          | username + password                                           | User-entered username and password. (사용자가 입력한 사용자 이름과 비밀번호입니다.)                                                                   |
+| Authentication Request (인증 요청) | username + password                                           | User-entered username and password. (로그인 앱에서 서버로 전송하는 사용자 이름과 비밀번호입니다.)                                                        |
+| Authentication Result (인증 결과) | success(true/false) + message                                 | Server returns the result. (서버에서 반환하는 인증 결과입니다. 성공 여부(true/false)와 추가 메시지(예: 에러 메시지)를 포함합니다.)              |
+| Server Response (서버 응답)         | success(true/false) + message                                 | Response to display the result. (인증 결과를 사용자에게 보여주기 위한 응답입니다.)                                                                  |
+| Database Request (데이터베이스 요청)| username + password                                          | Database requests user information for storage. (데이터베이스에 저장을 위한 사용자 정보 요청입니다.)                                                            |
+| Database Response (데이터베이스 응답)| success(true/false) + message                                 | The result of whether the data is stored in the database. (데이터베이스에 저장이 되었는지에 대한 결과입니다.)                                                              |
+| Data Save (데이터 저장)           | username + password                                           | Save username and password in the database. (데이터베이스에 사용자 이름과 비밀번호를 저장합니다.)                                                              |
+
+
+       # Mini-spec
+
+       ## Process 1.0: User Input (사용자 입력)
+
+       *   **Goal (목표):** Receive username and password from the user. (사용자로부터 사용자 이름과 비밀번호를 입력받습니다.)
+       *   **Input (입력):** None (User's UI interaction) (없음 (사용자의 UI 상호 작용))
+       *   **Output (출력):** `User Input` (username, password) (사용자 입력 (username, password))
+       *   **Logic (로직):**
+           1.  Provide the user with a username input field and a password input field. (사용자에게 사용자 이름 입력 필드와 비밀번호 입력 필드를 제공합니다.)
+           2.  The user enters values in the fields. (사용자가 필드에 값을 입력합니다.)
+           3.  The user clicks the "Login" button. (사용자가 "로그인" 버튼을 누릅니다.)
+           4.  Check if the fields have values. (필드에 값이 있는지 검증합니다.)
+
+       ## Process 2.0: Authentication Request (인증 요청)
+
+       *   **Goal (목표):** Send the username and password to the server to request authentication. (서버로 사용자 이름과 비밀번호를 전송하여 인증을 요청합니다.)
+       *   **Input (입력):** `User Input` (username, password) (사용자 입력 (username, password))
+       *   **Output (출력):** `Authentication Request` (username, password) (인증 요청 (username, password))
+       *   **Logic (로직):**
+           1.  Convert the username and password to JSON format. (사용자 이름과 비밀번호를 JSON 형식으로 변환합니다.)
+           2.  Use the `ApiService`'s `login` method to send a POST request to the server. (`ApiService`의 `login` 메서드를 사용하여 서버에 POST 요청을 보냅니다.)
+           3.  Wait for the server's response. (서버의 응답을 기다립니다.)
+
+       ## Process 3.0: Authentication Result (인증 결과)
+
+       *   **Goal (목표):** Process the authentication result received from the server. (서버로부터 받은 인증 결과를 처리합니다.)
+       *   **Input (입력):** `Authentication Result` (success, message) (인증 결과 (success, message))
+       *   **Output (출력):** None (UI Update) (없음 (UI 업데이트))
+       *   **Logic (로직):**
+           1.  Check the `success` value of the server response. (서버 응답의 `success` 값을 확인합니다.)
+           2.  If `success` is `true`, navigate to the main screen. (`success`가 `true`이면, 메인 화면으로 이동합니다.)
+           3.  If `success` is `false`, display an error message to the user. (`success`가 `false`이면, 에러 메시지를 사용자에게 보여줍니다.)
+
+       ## Process 4.0: Server Response (서버 응답)
+
+       *   **Goal (목표):** Show an error message through the server's response, or move to the next screen. (서버의 응답을 통해 에러 메시지를 보여주거나, 다음 화면으로 이동합니다.)
+       *   **Input (입력):** `Server Response` (success, message) (서버 응답 (success, message))
+       *   **Output (출력):** None (UI Update) (없음 (UI 업데이트))
+       *   **Logic (로직):**
+           1.  Check the `success` value of the server response. (서버 응답의 `success` 값을 확인합니다.)
+           2.  If `success` is `true`, navigate to the main screen. (`success`가 `true`이면, 메인 화면으로 이동합니다.)
+           3.  If `success` is `false`, display an error message to the user. (`success`가 `false`이면, 에러 메시지를 사용자에게 보여줍니다.)
+
+       ## Process 5.0: Database Request (데이터베이스 요청)
+
+       *   **Goal (목표):** Request data for authentication from the database. (데이터베이스에 인증을 위해 데이터를 요청합니다.)
+       *   **Input (입력):** `Authentication Request` (username, password) (인증 요청 (username, password))
+       *   **Output (출력):** `Database Request` (username, password) (데이터베이스 요청 (username, password))
+       *   **Logic (로직):**
+           1. When an authentication request is received, it requests information such as username and password from the database. (인증 요청을 받으면, 데이터베이스에 username, password와 같은 정보를 요청합니다.)
+
+       ## Process 6.0: Database Response (데이터베이스 응답)
+
+       *   **Goal (목표):** Return the result of the database request. (데이터베이스 요청에 대한 결과를 반환합니다.)
+       *   **Input (입력):** `Database Request` (username, password) (데이터베이스 요청 (username, password))
+       *   **Output (출력):** `Database Response` (success, message) (데이터베이스 응답 (success, message))
+       *   **Logic (로직):**
+           1. Check the data in the database. (데이터베이스에서 데이터를 확인합니다.)
+           2. If the database does not exist, return an error. (데이터베이스가 존재하지 않으면, 에러를 반환합니다.)
+           3. If the data exists, return a response. (데이터가 존재하면, 응답을 반환합니다.)
+
+       ## Process 7.0: Data Save (데이터 저장)
+
+       *   **Goal (목표):
