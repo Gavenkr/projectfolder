@@ -104,3 +104,5 @@
        ## Process 7.0: Data Save (데이터 저장)
 
        *   **Goal (목표):
+
+       scvcsr123@naver.com

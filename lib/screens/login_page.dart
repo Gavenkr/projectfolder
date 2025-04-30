@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart'; // api_service 가져오기
-import '../widgets/custom_text_field.dart'; // custom_text_field 가져오기
-import '../widgets/custom_button.dart'; // custom_button 가져오기
+import '../services/kakao_service.dart'; // KakaoService를 사용하기 위해 import
+import '../services/api_service.dart'; // ApiService를 사용하기 위해 import
+import '../widgets/custom_button.dart'; // CustomButton 위젯을 사용하기 위해 import
 
 class LoginPage extends StatefulWidget {
   @override
@@ -9,103 +9,109 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final KakaoService _kakaoService = KakaoService();
+  final ApiService _apiService = ApiService();
   String _errorMessage = '';
-  final ApiService _apiService = ApiService(); // ApiService 인스턴스 생성
+  bool _isLoading = false; // 로딩 상태를 나타내는 변수
 
-  Future<void> _login() async {
+  Future<void> _loginWithKakao() async {
     setState(() {
-      _errorMessage = '';
+      _errorMessage = ''; // 에러 메시지 초기화
+      _isLoading = true; // 로딩 시작
     });
-    if (_formKey.currentState!.validate()) {
-      try {
+    print(1);
+    try {
+      //카카오 토큰이 존재하는지 확인
+      final isExistToken = await _kakaoService.isExistKakaoToken();
+      print(2);
+      print(isExistToken);
 
-        final response = await _apiService.login(
-          _usernameController.text,
-          _passwordController.text,
-        );
-        if (response.statusCode == 200) {
-          print('Login Success');
-          setState(() {
-            _errorMessage = "로그인 성공";
-          });
-          print(response.statusCode);
-          Navigator.pushReplacementNamed(context, '/main');
+      if(!isExistToken!) {
+        // 카카오 토큰이 없다면
+        final kakaoToken = await _kakaoService.login(); // KakaoService를 통해 카카오 로그인 시도
+        print(3);
+
+        if (kakaoToken != null) {
+          // 카카오 로그인 성공
+          // 앱 서버로 카카오 토큰을 전달하여 인증 진행
+          print(4);
+          final response = await _apiService.loginWithKakao(kakaoToken);
+          print(5);
+          print(response);
+          if (response.statusCode == 200) {
+            // 앱 서버 인증 성공
+            // 다음 화면으로 이동 (예: 메인 화면)
+            Navigator.pushReplacementNamed(context, '/main');
+          } else {
+            // 앱 서버 인증 실패
+            setState(() {
+              _showErrorSnackBar(response.data['message'] ?? '로그인 실패');
+            });
+          }
         } else {
+          // 카카오 로그인 실패
           setState(() {
-            _errorMessage = response.data['message'] ?? '로그인 실패';
+            _showErrorSnackBar('카카오 로그인 실패');
           });
-          print(response.statusCode);
         }
-      } catch (e) {
-        setState(() {
-          _errorMessage = '오류 발생: $e';
-        });
-        print('Error during login: $e');
+      } else {
+          // 토큰이 이미 존재하면, 토큰으로 로그인 시도
+        _showErrorSnackBar('이미 로그인 중 입니다.');
+        _kakaoService.CheckToken();
+        _kakaoService.logout();
       }
+    } catch (e) {
+      setState(() {
+        _showErrorSnackBar('로그인 중 오류가 발생했습니다: $e');
+      });
+      print('Error during login: $e');
+    } finally {
+      setState(() {
+        _isLoading = false; // 로딩 종료
+      });
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              CustomTextField( // CustomTextField 사용
-                controller: _usernameController,
-                labelText: 'Username',
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your username';
-                  }
-                  return null;
-                },
-              ),
-              CustomTextField( // CustomTextField 사용
-                controller: _passwordController,
-                labelText: 'Password',
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
-              CustomButton( // CustomButton 사용
-                  onPressed: _login,
-                  text: 'Login'
-              ),
-              if (_errorMessage.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: Text(
-                    _errorMessage,
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-            ],
-          ),
-        ),
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
       ),
     );
   }
 
   @override
-  void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    //var pressed = (_isLoading ? null : _loginWithKakao) as VoidCallback;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Login'),
+      ),
+      body: Center(
+        child: Stack(
+          children: [
+            Column( // 에러메시지를 표시
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                CustomButton( // 카카오 로그인 버튼
+                  onPressed: _loginWithKakao,
+                  text: '카카오 로그인',
+                  //icon: Icons.chat, // 예시 아이콘
+                ),
+                SizedBox(height: 20),
+                if(_errorMessage.isNotEmpty) // 에러메시지가 있는 경우만 띄우기
+                  Text(
+                    _errorMessage, // 에러 메시지 표시
+                    style: TextStyle(color: Colors.red),
+                  ),
+              ],
+            ),
+            if(_isLoading)
+              Center(
+                child: CircularProgressIndicator(),
+              )
+        ]),
+      ),
+    );
   }
 }
